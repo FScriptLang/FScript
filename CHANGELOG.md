@@ -4,6 +4,10 @@ All notable changes to FScript are documented in this file.
 
 ## [Unreleased]
 
+## [0.95]
+
+### [v0.95.3]
+
 - Run colocated `*_test.fss` files with `fscript test` and report named assertion failures.
 - Assert that an option contains a value or is empty with `Assert.some` and `Assert.none`.
 - Check floating-point values against a relative tolerance with `Assert.relative`.
@@ -12,7 +16,7 @@ All notable changes to FScript are documented in this file.
 - Show the source file, line, and column for failed test assertions.
 - Support editor test discovery, exact case runs, source diagnostics, and debugging one test case.
 
-## [0.95]
+**Full Changelog**: https://github.com/FScriptLang/FScript/compare/v0.95.2...v0.95.3
 
 ### [v0.95.2]
 
