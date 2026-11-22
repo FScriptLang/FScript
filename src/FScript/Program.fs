@@ -42,6 +42,7 @@ let runCompileCommand (argv: string array) =
         match resolved with
         | Ok (settings, compilation) when File.Exists scriptPath ->
             let normalizedTarget = compilation.Backend
+            let printResult = not compilation.NoResult
             let singleFile = compilation.SingleFile
             let aot = compilation.AheadOfTime
             let minimizeSize = compilation.MinimizeSize
@@ -124,7 +125,7 @@ let runCompileCommand (argv: string array) =
                             complete (Path.Combine(outputDirectory, name))
                         | "csharp" ->
                             report "Generating C# project..."
-                            match FScript.Compiler.CSharpBackend.generateWithResultOutput (not (Array.contains "--no-result" argv)) {Namespace="FScript.Generated"; ClassName="Program"; References=references} lir with
+                            match FScript.Compiler.CSharpBackend.generateWithResultOutput printResult {Namespace="FScript.Generated"; ClassName="Program"; References=references} lir with
                             | Error diagnostics ->
                                 diagnostics |> List.iter (fun d -> Console.Error.WriteLine($"{d.Code}: {d.Message}"))
                                 4
@@ -137,8 +138,8 @@ let runCompileCommand (argv: string array) =
                                   OutputKind=FScript.Compiler.ConsoleApplication; References=references }
                             report "Generating .NET assembly..."
                             let generated=
-                                if executable then FScript.Compiler.DotNetBackend.generateExecutableWithResultOutputAndProgress (not (Array.contains "--no-result" argv)) report {RuntimeIdentifier=runtime.Value;AheadOfTime=aot;MinimizeSize=minimizeSize} options lir
-                                else FScript.Compiler.DotNetBackend.generateWithResultOutput (not (Array.contains "--no-result" argv)) options lir
+                                if executable then FScript.Compiler.DotNetBackend.generateExecutableWithResultOutputAndProgress printResult report {RuntimeIdentifier=runtime.Value;AheadOfTime=aot;MinimizeSize=minimizeSize} options lir
+                                else FScript.Compiler.DotNetBackend.generateWithResultOutput printResult options lir
                             match generated with
                             | Error diagnostics ->
                                 diagnostics |> List.iter (fun d -> Console.Error.WriteLine($"{d.Code}: {d.Message}"))
@@ -465,27 +466,32 @@ let runOrdinaryCommand argv =
                     (args.Contains <@ No_Default_Externs @>)
                     (args.GetResults <@ Extern_Assembly @>)
                 |> Result.bind (PermissionPolicy.forCli (args.TryGetResult <@ Permissions @>))
-            let rootDirectory = settingsResult |> Result.map (fun settings -> settings.RootDirectory) |> Result.defaultValue defaultRoot
-            let externsResult = settingsResult |> Result.bind (EnvironmentLoader.loadWithPermissions HostPermissions.All)
+            let externsResult =
+                settingsResult
+                |> Result.bind (fun settings ->
+                    EnvironmentLoader.loadWithPermissions HostPermissions.All settings
+                    |> Result.map (fun registration -> settings, registration))
 
             try
                 match externsResult with
                 | Error message ->
                     Console.Error.WriteLine(message)
                     1
-                | Ok registration ->
+                | Ok (settings, registration) ->
+                    let rootDirectory = settings.RootDirectory
+                    let printResult = not (args.Contains <@ No_Result @> || settings.NoResult)
                     match scriptPath with
                     | Some path ->
-                        runFile (not (args.Contains <@ No_Result @>)) registration rootDirectory path scriptArguments
+                        runFile printResult registration rootDirectory path scriptArguments
                     | None when Console.IsInputRedirected ->
                         let source = Console.In.ReadToEnd()
-                        runSource (not (args.Contains <@ No_Result @>)) registration rootDirectory source scriptArguments
+                        runSource printResult registration rootDirectory source scriptArguments
                     | None ->
                         if not scriptArguments.IsEmpty then
                             Console.Error.WriteLine("Script arguments require file or stdin mode. Use 'fscript <script.fss> -- <args...>' or pipe stdin with '--'.")
                             1
                         else
-                            runRepl (not (args.Contains <@ No_Result @>)) registration rootDirectory
+                            runRepl printResult registration rootDirectory
             with
             | ParseException err ->
                 Console.Error.WriteLine($"Parse error {formatSpan err.Span}: {err.Message}")

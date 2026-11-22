@@ -9,6 +9,7 @@ type Settings =
       AheadOfTime: bool
       MinimizeSize: bool
       SingleFile: bool
+      NoResult: bool
       RuntimeIdentifier: string option
       OutputDirectory: string }
 
@@ -41,5 +42,6 @@ let resolve (arguments: string array) (scriptPath: string) (defaults: CompileCon
             |> Option.defaultWith (fun () ->
                 let root = Path.Combine(Path.GetDirectoryName(scriptPath) |> nonNull, "bin", Path.GetFileNameWithoutExtension(scriptPath), backend)
                 if native && (aot || single) then Path.Combine(root, runtime.Value, if aot then "aot" else "single-file") else root)
-        Ok { Backend=backend; AheadOfTime=aot; SingleFile=single; MinimizeSize=size; RuntimeIdentifier=runtime; OutputDirectory=output }
+        let noResult = has "--no-result" || (backend <> "ir" && defaults.NoResult = Some true)
+        Ok { Backend=backend; NoResult=noResult; AheadOfTime=aot; SingleFile=single; MinimizeSize=size; RuntimeIdentifier=runtime; OutputDirectory=output }
     with :? ArgumentException as error -> Error error.Message

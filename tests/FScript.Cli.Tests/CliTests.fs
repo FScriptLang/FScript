@@ -1194,11 +1194,33 @@ Ref.set "world" words
         Assert.That(error,Is.Empty)
         Assert.That(output.Replace("\r\n","\n").Trim(),Is.EqualTo(if noResult then "after" else "after\n42"))
 
-    [<TestCase("dotnet",false)>]
-    [<TestCase("dotnet",true)>]
-    [<TestCase("csharp",false)>]
-    [<TestCase("csharp",true)>]
-    member _.``Compiled status and result policy match scripting`` (target: string,noResult: bool) =
+    [<TestCase("true", false, false, "after")>]
+    [<TestCase("false", false, false, "after\n42")>]
+    [<TestCase("true", true, false, "after")>]
+    [<TestCase("true", false, true, "after\n42")>]
+    member _.``Runtime manifest controls final result display`` (noResult: string, stdin: bool, noConfig: bool, expected: string) =
+        let root = findRepoRoot ()
+        let directory = Path.Combine(Path.GetTempPath(), $"fscript-result-{Guid.NewGuid():N}")
+        Directory.CreateDirectory(directory) |> ignore
+        try
+            let script = Path.Combine(directory, "result.fss")
+            let source = "Console.writeLine \"after\"\n42"
+            File.WriteAllText(script, source)
+            File.WriteAllText(Path.Combine(directory, "fscript.toml"), $"[runtime]\nno-result = {noResult}")
+            let flags = if noConfig then ["--no-config"] else []
+            let arguments, input = if stdin then flags, Some source else flags @ [script], None
+            let code, output, error = runCli root directory arguments input
+            Assert.That(code, Is.Zero, error)
+            Assert.That(output.Replace("\r\n", "\n").Trim(), Is.EqualTo(expected))
+        finally Directory.Delete(directory, true)
+
+    [<TestCase("dotnet",false, false)>]
+    [<TestCase("dotnet",true, false)>]
+    [<TestCase("csharp",false, false)>]
+    [<TestCase("csharp",true, false)>]
+    [<TestCase("dotnet",true, true)>]
+    [<TestCase("csharp",true, true)>]
+    member _.``Compiled status and result policy match scripting`` (target: string,noResult: bool, manifest: bool) =
         let root=findRepoRoot ()
         let directory=Path.Combine(Path.GetTempPath(),"fscript-status-"+Guid.NewGuid().ToString("N"))
         Directory.CreateDirectory(directory) |> ignore
@@ -1206,7 +1228,8 @@ Ref.set "world" words
             let script=Path.Combine(directory,"status.fss")
             File.WriteAllText(script,"Env.setExitCode 7\nConsole.writeLine \"after\"\n42")
             let output=Path.Combine(directory,"output")
-            let flags=if noResult then ["--no-result"] else []
+            if manifest then File.WriteAllText(Path.Combine(directory, "fscript.toml"), "[compile]\nno-result = true")
+            let flags=if noResult && not manifest then ["--no-result"] else []
             let code,_,error=runCli root directory (["compile";script;"--target";target;"--output";output] @ flags) None
             Assert.That(code,Is.Zero,error)
             let start=ProcessStartInfo("dotnet",WorkingDirectory=directory,RedirectStandardOutput=true,RedirectStandardError=true)

@@ -67,5 +67,5 @@ fortune, decodes the response as UTF-8, and prints it to the console. Run it
 from the repository root with internet access.
 
 ```sh
-dotnet run --project src/FScript -- --no-result samples/http/main.fss
+dotnet run --project src/FScript -- samples/http/main.fss
 ```

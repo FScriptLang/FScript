@@ -4,6 +4,7 @@ All notable changes to FScript are documented in this file.
 
 ## [Unreleased]
 
+- Suppress automatic result display with `no-result` in `fscript.toml`.
 - Send raw HTTP requests with the .NET Runtime `Http` module and the new `Network` permission. Explicit `All` grants include `Network`.
 - Try HTTP GET with a sample that prints the daily fortune to the console.
 

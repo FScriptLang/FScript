@@ -27,6 +27,18 @@ Compilation automatically references its provider assemblies and their managed d
 
 Configuration, missing-file, loading, provider-signature and registration-conflict errors stop execution with a nonzero exit. The same legacy and registration-returning `[<FScriptExternProvider>]` methods work through flags and configuration.
 
+## Interpreter result display
+
+Set `runtime.no-result` to suppress automatic display of the final value in
+file, stdin, and REPL execution. The default is `false`. Explicit console
+output and exit status are independent of this setting. The `--no-result`
+flag enables suppression even when the manifest sets it to `false`.
+
+```toml
+[runtime]
+no-result = true
+```
+
 ## Interpreter permission selection
 
 Interpreted file execution, stdin, REPL, debugging, and static analysis default
@@ -96,10 +108,15 @@ Then run `fscript compile main.fss`. The entry script is still a positional argu
 | `compile.aot` | Boolean | `false` |
 | `compile.size-optimized` | Boolean | `false` |
 | `compile.single-file` | Boolean | `false` |
+| `compile.no-result` | Boolean | `false` |
 | `compile.runtime` | Nonempty string | Build host RID for executable publishing |
 | `compile.output` | Nonempty path string | Conventional directory below the entry script |
 
 Explicit CLI options override manifest values. `--target` overrides `backend`; `--output` and `--runtime` override their corresponding properties. `--aot` / `--no-aot`, `--size-optimized` / `--no-size-optimized`, and `--single-file` / `--no-single-file` override booleans in either direction. Supplying both positive and negative forms of one flag is an error. Explicit options missing their value are errors, even if the manifest defines a fallback.
+
+For C# and .NET compilation, `compile.no-result = true` has the same effect as
+`--no-result`. The flag enables suppression even when the manifest sets it to
+`false`. IR compilation ignores the manifest setting and rejects the explicit flag.
 
 Selecting C# or IR ignores inherited .NET publishing defaults. Explicit .NET publishing flags on those backends remain errors. `--single-file` replaces inherited AOT and size optimization; `--aot` replaces inherited single-file mode. `--no-aot` also clears inherited size optimization. An explicit `--size-optimized` still requires effective AOT. If both publishing modes are enabled together, AOT takes precedence, matching the existing CLI behavior. Inherited runtime identifiers apply only to executable publishing; explicit `--runtime` without a publishing mode remains an error.
 

@@ -14,12 +14,13 @@ type CompileConfiguration =
       AheadOfTime: bool option
       MinimizeSize: bool option
       SingleFile: bool option
+      NoResult: bool option
       RuntimeIdentifier: string option
       OutputDirectory: string option }
 
 module CompileConfiguration =
     let empty =
-        { Backend=None; AheadOfTime=None; MinimizeSize=None; SingleFile=None
+        { Backend=None; AheadOfTime=None; MinimizeSize=None; SingleFile=None; NoResult=None
           RuntimeIdentifier=None; OutputDirectory=None }
 
 /// Parsed configuration; omitted properties remain distinct from defaults.
@@ -27,6 +28,7 @@ type EnvironmentConfiguration =
     { Path: string
       Root: string option
       DefaultExterns: bool option
+      NoResult: bool option
       Permissions: HostPermissions option
       ExternAssemblies: string list option
       Packages: ExtensionPackage list option
@@ -38,6 +40,7 @@ type EnvironmentSettings =
       BaseDirectory: string
       RootDirectory: string
       DefaultExterns: bool
+      NoResult: bool
       Permissions: HostPermissions option
       ExternAssemblies: string list
       Packages: ExtensionPackage list
@@ -99,7 +102,7 @@ module EnvironmentConfiguration =
                 | true, (:? TomlTable as table) -> table
                 | _ -> invalid document "runtime" "runtime" "Expected a table."
             for key in runtime.Keys do
-                if not (["root"; "default-externs"; "extern-assemblies"; "packages"; "permissions"] |> List.contains key) then
+                if not (["root"; "default-externs"; "extern-assemblies"; "packages"; "permissions"; "no-result"] |> List.contains key) then
                     invalid runtime key $"runtime.{key}" "Unknown configuration property."
             let root =
                 match runtime.TryGetValue "root" with
@@ -111,6 +114,11 @@ module EnvironmentConfiguration =
                 | false, _ -> None
                 | true, (:? bool as value) -> Some value
                 | _ -> invalid runtime "default-externs" "runtime.default-externs" "Expected a boolean."
+            let noResult =
+                match runtime.TryGetValue "no-result" with
+                | false, _ -> None
+                | true, (:? bool as value) -> Some value
+                | _ -> invalid runtime "no-result" "runtime.no-result" "Expected a boolean."
             let permissions =
                 match runtime.TryGetValue "permissions" with
                 | false, _ -> None
@@ -159,7 +167,7 @@ module EnvironmentConfiguration =
                 | true, (:? TomlTable as table) -> table
                 | _ -> invalid document "compile" "compile" "Expected a table."
             for key in compile.Keys do
-                if not (List.contains key ["backend"; "aot"; "size-optimized"; "single-file"; "runtime"; "output"]) then
+                if not (List.contains key ["backend"; "aot"; "size-optimized"; "single-file"; "runtime"; "output"; "no-result"]) then
                     invalid compile key $"compile.{key}" "Unknown configuration property."
             let textOption key =
                 match compile.TryGetValue key with
@@ -179,10 +187,10 @@ module EnvironmentConfiguration =
             let fullPath = Path.GetFullPath path
             let directory = Path.GetDirectoryName fullPath
             Ok { Path = fullPath; Root = root |> Option.map (normalizePath directory)
-                 DefaultExterns = defaults; Permissions = permissions; Packages = packages
+                 DefaultExterns = defaults; NoResult = noResult; Permissions = permissions; Packages = packages
                  Compilation =
                     { Backend=backend; AheadOfTime=boolOption "aot"; MinimizeSize=boolOption "size-optimized"
-                      SingleFile=boolOption "single-file"; RuntimeIdentifier=textOption "runtime"
+                      SingleFile=boolOption "single-file"; NoResult=boolOption "no-result"; RuntimeIdentifier=textOption "runtime"
                       OutputDirectory=textOption "output" |> Option.map (normalizePath directory) }
                  ExternAssemblies = assemblies |> Option.map (List.map (normalizePath directory)) }
         with ex -> Error $"Unable to read environment configuration '{path}': {ex.Message}"
@@ -200,6 +208,7 @@ module EnvironmentConfiguration =
             |> Option.orElse (configuration |> Option.bind (fun c -> c.Root))
             |> Option.defaultValue defaultRoot |> Path.GetFullPath
           DefaultExterns = not disableDefaults && (configuration |> Option.bind (fun c -> c.DefaultExterns) |> Option.defaultValue true)
+          NoResult = configuration |> Option.bind (fun c -> c.NoResult) |> Option.defaultValue false
           Permissions = configuration |> Option.bind (fun c -> c.Permissions)
           Packages = configuration |> Option.bind (fun c -> c.Packages) |> Option.defaultValue []
           Compilation = configuration |> Option.map (fun c -> c.Compilation) |> Option.defaultValue CompileConfiguration.empty
