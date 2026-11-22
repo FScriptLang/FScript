@@ -44,7 +44,7 @@ module HostInterop =
     let allows granted required = (granted &&& required) = required
     let permissionNames permissions =
         [ HostPermissions.Interactive, "Interactive"; HostPermissions.Threading, "Threading"
-          HostPermissions.IO, "IO"; HostPermissions.Native, "Native" ]
+          HostPermissions.IO, "IO"; HostPermissions.Native, "Native"; HostPermissions.Network, "Network" ]
         |> List.choose (fun (permission,name) -> if allows permissions permission then Some name else None)
         |> String.concat ", "
 

@@ -23,6 +23,7 @@ module internal ScriptRunner =
         | "Threading" -> HostPermissions.Threading
         | "IO" -> HostPermissions.IO
         | "Native" -> HostPermissions.Native
+        | "Network" -> HostPermissions.Network
         | _ -> fail "InvalidOptions" $"Unknown permission: {name}"
     let private permissionList = function
         | VList values -> values |> List.fold (fun flags value -> flags ||| permission (text value)) HostPermissions.None

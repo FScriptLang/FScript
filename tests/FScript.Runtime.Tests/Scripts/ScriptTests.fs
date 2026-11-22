@@ -253,3 +253,14 @@ type ScriptTests() =
             ScriptTestFiles.write root "a.fss" "import \"b.fss\" as B\n\"a\""
             ScriptTestFiles.write root "b.fss" "import \"a.fss\" as A\n\"b\""
             execute root grants [] "a.fss" "FScript.defaults" |> ScriptTestFiles.failure "ParseFailed" |> ignore)
+
+    [<Test>]
+    member _.``Child network permission can be inherited or removed and cannot be added`` () =
+        ScriptTestFiles.withRoot (fun root ->
+            ScriptTestFiles.write root "http.fss" "Http.get \"file:///tmp/test\" Http.defaults |> ignore\n\"done\""
+            let network = grants ||| HostPermissions.Network
+            execute root network [] "http.fss" "FScript.defaults" |> ScriptTestFiles.completed "done" 0
+            execute root network [] "http.fss" "{ FScript.defaults with permissions = Some [\"Threading\"] }"
+            |> ScriptTestFiles.failure "TypeFailed" |> ignore
+            execute root grants [] "http.fss" "{ FScript.defaults with permissions = Some [\"Network\"] }"
+            |> ScriptTestFiles.failure "PermissionDenied" |> ignore)

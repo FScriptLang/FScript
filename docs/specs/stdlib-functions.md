@@ -427,6 +427,12 @@ deterministic scheduling, shrinking, and replay.
 
 All core functions and values and pure runtime transformations require no permissions. `Fs.readText`, `Fs.exists`, `Fs.kind`, `Fs.createDirectory`, `Fs.writeText`, `Fs.glob`, `Fs.enumerateFiles`, `Console.writeLine`, and `Guid.new` require `IO`. `Console.readLine` requires `IO | Interactive`. All eight Task functions require `Threading`. Lexical `Fs.combinePath`, `Fs.parentDirectory`, `Fs.extension`, and `Fs.fileNameWithoutExtension` require none. Provider-owned SDK externs require `Native`; callback operations retain their individual requirements. Hosted and interpreted CLI grants default to none. CLI flags or the selected manifest can grant capabilities; compilation and generated programs remain unrestricted. The [signature index](https://github.com/FScriptLang/FScriptLang.github.io/blob/main/docs/next/reference/stdlib-reference.md) lists the required grants on every function row.
 
+## HTTP
+
+`Http.send` and its method helpers send raw HTTP requests with `Network`.
+`Task.await` requires `Threading`. See the [HTTP contract](./http.md) for request
+construction, raw response data, and JSON examples.
+
 ## Optional Process module
 
 `Process.exec : string -> string list -> ProcessOptions -> ProcessResult task` requires `Native` and exposes asynchronous I/O; script Task operations such as `Task.await` separately require `Threading`. Runtime supplies the module through default externs without an external import. `Process.defaults` and the data types require no grants. Both native backends and CLI use Runtime for the same API; JavaScript and standalone LIR execution do not supply it. See the [Process module contract](https://github.com/FScriptLang/FScriptLang.github.io/blob/main/docs/next/stdlib/process.md) for options, union payloads, defaults, failure prefixes, encoding, path resolution, and lifecycle behavior. Process execution is observable and must not be eliminated or combined by compiler optimizations.

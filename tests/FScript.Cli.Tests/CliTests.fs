@@ -1321,6 +1321,7 @@ Ref.set "world" words
     [<TestCase("Console.writeLine \"blocked\"", "Console")>]
     [<TestCase("Task.fromResult 42", "Task")>]
     [<TestCase("Process.exec \"missing\" [] Process.defaults", "Process")>]
+    [<TestCase("Http.get \"http://127.0.0.1\" Http.defaults", "Http")>]
     member _.``CLI permission defaults deny effects`` (source: string, name: string) =
         let repo = findRepoRoot ()
         let code, _, error = runCliRaw repo repo ["--no-config"] (Some source)
@@ -1338,6 +1339,10 @@ Ref.set "world" words
     [<TestCase("IO,", "42", 1)>]
     [<TestCase("None,IO", "42", 1)>]
     [<TestCase("Unknown", "42", 1)>]
+    [<TestCase("network", "Http.get \"file:///tmp/test\" Http.defaults |> ignore", 0)>]
+    [<TestCase("IO", "Http.get \"file:///tmp/test\" Http.defaults |> ignore", 2)>]
+    [<TestCase("Network", "Http.get \"file:///tmp/test\" Http.defaults |> Task.await", 2)>]
+    [<TestCase("Network,Threading", "Http.get \"file:///tmp/test\" Http.defaults |> Task.await", 0)>]
     member _.``CLI selects and validates explicit permissions`` (permissions: string, source: string, expected: int) =
         let repo = findRepoRoot ()
         let code, _, error = runCliRaw repo repo ["--no-config"; "--permissions"; permissions] (Some source)

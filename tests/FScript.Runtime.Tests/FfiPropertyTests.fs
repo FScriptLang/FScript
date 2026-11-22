@@ -133,6 +133,8 @@ type FfiPropertyTests() =
         let io, threading, read = HostPermissions.IO, HostPermissions.Threading, HostPermissions.IO ||| HostPermissions.Interactive
         [ for name in ["Fs.readText"; "Fs.exists"; "Fs.kind"; "Fs.createDirectory"; "Fs.writeText"; "Fs.glob"; "Fs.enumerateFiles"; "Guid.new"; "Console.writeLine"] -> name, io ]
         @ ["Console.readLine", read; "Process.exec", HostPermissions.Native; "Process.defaults", HostPermissions.None; "FScript.defaults", HostPermissions.None; "FScript.exec", threading]
+        @ ["Http.defaults", HostPermissions.None]
+        @ [for name in ["Http.send"; "Http.get"; "Http.head"; "Http.post"; "Http.put"; "Http.patch"; "Http.delete"] -> name, HostPermissions.Network]
         @ [for name in ["Ref.create"; "Ref.get"; "Ref.set"] -> name, HostPermissions.None]
         @ [for name in ["Task.spawn"; "Task.await"; "Task.delay"; "Task.fromResult"; "Task.continueWith"; "Task.whenAll"; "Task.whenAny"; "Task.awaitAll"; "Mailbox.start"; "Mailbox.post"; "Mailbox.finish"] -> name, threading]
         @ [for name in ["Fs.combinePath"; "Fs.parentDirectory"; "Fs.extension"; "Fs.fileNameWithoutExtension"; "Json.serialize"; "Json.deserialize"; "Xml.queryValues"; "Regex.matchGroups"; "Hash.md5"; "Hash.sha256"; "Hash.sha256Bytes"; "Encoding.utf8Encode"; "Encoding.utf8Decode"; "Encoding.base64Encode"; "Encoding.base64Decode"; "Encoding.hexEncode"; "Encoding.hexDecode"; "Encoding.uriEncode"; "Encoding.uriDecode"] -> name, HostPermissions.None]
@@ -140,8 +142,11 @@ type FfiPropertyTests() =
     [<TestCase(104729UL)>]
     [<TestCase(130363UL)>]
     member _.RegistryRespectsCapabilityMatrix(seed: uint64) =
+        let declaredMask =
+            FfiPropertyTests.ExpectedCatalog
+            |> List.fold (fun mask (_, required) -> mask ||| int required) 0
         verify "FfiPropertyTests.RegistryRespectsCapabilityMatrix" 100 inputs seed (fun input ->
-            let permissions = enum<HostPermissions>(abs input.Number % 16)
+            let permissions = enum<HostPermissions>(input.Number &&& declaredMask)
             let context = { HostContext.create "." with Permissions = permissions }
             let actual = Registry.registration context
             let expected = FfiPropertyTests.ExpectedCatalog |> List.filter (fun (_, required) -> (permissions &&& required) = required) |> List.map fst |> Set.ofList

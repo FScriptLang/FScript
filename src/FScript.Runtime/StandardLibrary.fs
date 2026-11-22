@@ -33,7 +33,7 @@ module internal StandardLibrary =
           ConsoleExterns.read_line
           JsonExterns.deserialize
           JsonExterns.serialize
-          XmlExterns.query_values ] @ PureExterns.functions @ TaskExterns.all @ mailbox.Functions @ reference.Functions
+          XmlExterns.query_values ] @ HttpExterns.registration.Functions @ PureExterns.functions @ TaskExterns.all @ mailbox.Functions @ reference.Functions
         |> List.filter (fun fn -> HostInterop.allows ctx.Permissions fn.RequiredPermissions)
 
     /// Create an interpreter registration with exactly the host's grants.
@@ -41,5 +41,5 @@ module internal StandardLibrary =
         let processRegistration = ProcessExterns.registration context
         let registration = HostInterop.ofExternsWithPermissions context.Permissions (all context policy)
         { registration with
-            Unions = processRegistration.Unions @ (if HostInterop.allows context.Permissions HostPermissions.IO then [FsExterns.kindType] else [])
-            Types = processRegistration.Types @ reference.Types @ (if HostInterop.allows context.Permissions HostPermissions.Threading then mailbox.Types else []) }
+            Unions = HttpExterns.registration.Unions @ processRegistration.Unions @ (if HostInterop.allows context.Permissions HostPermissions.IO then [FsExterns.kindType] else [])
+            Types = HttpExterns.registration.Types @ processRegistration.Types @ reference.Types @ (if HostInterop.allows context.Permissions HostPermissions.Threading then mailbox.Types else []) }

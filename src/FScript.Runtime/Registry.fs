@@ -9,6 +9,7 @@ module Registry =
     let compiledProviders () =
         [mailbox.Functions |> List.map _.Name, typeof<CompiledMailbox>.GetMethod("Start") |> nonNull
          StandardLibrary.reference.Functions |> List.map _.Name, typeof<CompiledRef>.GetMethod("Create") |> nonNull
+         HttpExterns.registration.Functions |> List.map _.Name, typeof<CompiledHttp>.GetMethod("Send") |> nonNull
          ["Process.defaults";"Process.exec"], typeof<CompiledProcess>.GetMethod("Exec") |> nonNull
          ["FScript.defaults";"FScript.exec"], typeof<CompiledFScript>.GetMethod("Exec") |> nonNull]
 

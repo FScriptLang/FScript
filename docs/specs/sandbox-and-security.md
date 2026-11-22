@@ -12,7 +12,7 @@ This document defines the security model for running FScript programs with host 
 
 ## Hosted interpreter permissions
 
-Language `HostPermissions` is a flags enum: `None=0`, `Interactive=1`, `Threading=2`, `IO=4`, `Native=8`, and `All=15`. Host contexts and native registrations carry explicit grants; `HostInterop.empty`, extern-list APIs, SDK adaptation, and default `EnvironmentLoader` loading grant none. Interpreted CLI execution, debugging, static analysis, and editor catalogs default to None and use CLI/manifest permission selections. Compilation and generated programs remain unrestricted. Source reads and resolver callbacks are trusted host plumbing, not script IO grants.
+Language `HostPermissions` is a flags enum: `None=0`, `Interactive=1`, `Threading=2`, `IO=4`, `Native=8`, and `Network=16`. `All` sets every bit, including bits assigned to future capabilities. Host contexts and native registrations carry explicit grants; `HostInterop.empty`, extern-list APIs, SDK adaptation, and default `EnvironmentLoader` loading grant none. Interpreted CLI execution, debugging, static analysis, and editor catalogs default to None and use CLI/manifest permission selections. Compilation and generated programs remain unrestricted. Source reads and resolver callbacks are trusted host plumbing, not script IO grants.
 
 Native `ExternalFunction.RequiredPermissions` declares required bits. `ScriptHost` removes unavailable functions before inference; evaluator dispatch and `HostInterop.invoke` check requirements again, including arity-zero values, returned callable values, canonical tasks, and callback execution. The active execution context, retained REPL state, and `LoadedScript` retain host grants for exported invocations. SDK 3 contexts cannot spawn or await; script Task operations require `Threading`. Host callbacks can inspect their own trusted context but cannot grant capabilities through script values.
 
@@ -111,6 +111,14 @@ Debugging grants no variable-editing or arbitrary-evaluation capability.
 Scalar math, collection/text transformations, lexical `Path`, string-only `Glob`, and `SemVer` operations do not grant IO capabilities. `Path` uses fixed slash-only lexical rules; it does not consult the filesystem, resolve symlinks, infer the current directory, or provide containment guarantees. `Glob` matches only supplied strings and never enumerates files.
 
 A .NET host can register only `FScript.Runtime.PureExterns.functions` to expose strict encoding/decoding and SHA-256 over supplied content. This registration requires no root directory and includes no console, filesystem, process, network, clock, or random access. Higher-order helpers retain the capabilities and effects of their supplied callbacks. Host CPU/memory/time limits still apply to pure computations.
+
+## Network access
+
+`Network` authorizes outbound HTTP and HTTPS through the default .NET Runtime
+externs, including loopback and private destinations reachable by the host.
+`IO` and `Native` alone leave these externs unavailable. Request tasks inherit
+host cancellation. Script task operations still require `Threading`. Explicit
+`All` selections include `Network`. See the [HTTP contract](./http.md).
 
 ## Child process execution
 

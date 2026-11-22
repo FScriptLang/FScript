@@ -36,6 +36,8 @@ public class PermissionEnvironmentTests
     [TestCase("['IO']", "Task.fromResult 42", false)]
     [TestCase("['Threading']", "Task.fromResult 42", true)]
     [TestCase("['Invalid']", "Console.writeLine \"denied\"", false)]
+    [TestCase("['IO']", "Http.get \"http://localhost\" Http.defaults", false)]
+    [TestCase("['Network']", "Http.get \"http://localhost\" Http.defaults", true)]
     public void Editor_catalog_follows_script_permissions(string? permissions, string source, bool allowed)
     {
         var directory = Directory.CreateTempSubdirectory("fscript-lsp-permissions-");

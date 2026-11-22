@@ -28,10 +28,11 @@ and replay configuration.
 | Filesystem | 500 | Operation sequences match a file/directory model; root escapes and denied paths preserve private fixture sentinels; lexical helpers preserve generated components. |
 | Task | 600 | Finite task graphs match pure folds, preserve collection order and repeated handles, retain composite result types, suppress callbacks on failed prerequisites, join effects and collect failures, select a controlled ready input, and reject invalid bounds and empty `whenAny`. |
 
-`FfiPropertyTests.ExpectedCatalog` explicitly lists all 40 registered externs and
+`FfiPropertyTests.ExpectedCatalog` explicitly lists the registered externs and
 their required permissions. A catalog guard fails if a default extern is added,
 removed, or changes permissions without updating that inventory. Its entries
-correspond to the property groups above and the existing mailbox properties.
+correspond to the property groups above, the mailbox properties, and the
+loopback HTTP tests.
 This covers the default catalog, rather than arbitrary third-party providers or
 all runtime hosting and package-loading APIs.
 

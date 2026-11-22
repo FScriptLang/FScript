@@ -4,6 +4,8 @@ All notable changes to FScript are documented in this file.
 
 ## [Unreleased]
 
+- Send raw HTTP requests with the .NET Runtime `Http` module and the new `Network` permission. Explicit `All` grants include `Network`.
+
 ## [0.95]
 
 ### [v0.95.5]

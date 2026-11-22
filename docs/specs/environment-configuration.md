@@ -47,7 +47,7 @@ permissions = ["IO", "Threading"]
 
 Explicit CLI permissions replace the manifest list; otherwise the manifest list
 applies, falling back to `None`. `--no-config` ignores the manifest. Names are
-case-insensitive: `Interactive`, `Threading`, `IO`, `Native`, `All`, and `None`.
+case-insensitive: `Interactive`, `Threading`, `IO`, `Native`, `Network`, `All`, and `None`.
 `All` and `None` must stand alone. TOML `[]` explicitly grants nothing. Unknown
 names, wrong value types, and empty comma-separated CLI entries are errors,
 validated before package restoration or provider initialization.
@@ -176,6 +176,13 @@ Packaged editor servers must carry the release assembly version used by the matc
 Assembly providers use `FScript.Extensibility` attributes and return SDK `ExternalFunction list` or `ExtensionRegistration`, with no arguments or one sealed SDK `HostContext`. Existing provider assemblies must rebuild. SDK helpers and values do not depend on interpreter assemblies. Runtime adapts registrations using `ExtensionBridge.toLanguageRegistration`; native embedding APIs retain their Language representations. Authoring helpers live in the SDK, not Runtime.
 
 Provider trust, atomic loading, configuration selection, and reload rules are unchanged. SDK callback/task handles are valid only in their originating active evaluation; handler contexts expire on return. Runtime enforces limits and rejects foreign/expired handles. An SDK `ExtensionException` carries a message and optional inner cause; callback errors preserve script locations.
+
+## HTTP functions
+
+Select `--permissions Network,Threading` or set
+`permissions = ["Network", "Threading"]` under `[runtime]` to send and await
+requests through the default [HTTP externs](./http.md). `Network` alone
+authorizes sending. Disabling default externs removes the HTTP module.
 
 ## Process functions
 

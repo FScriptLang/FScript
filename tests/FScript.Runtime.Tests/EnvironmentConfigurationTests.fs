@@ -107,13 +107,19 @@ type EnvironmentConfigurationTests() =
 
     [<TestCase("[]", 0)>]
     [<TestCase("['io','THREADING']", 6)>]
-    [<TestCase("['All']", 15)>]
+    [<TestCase("['nEtWoRk']", 16)>]
     [<TestCase("['None']", 0)>]
     member _.``Permission configuration parses explicit selections`` (names: string, expected: int) =
         let parsed = EnvironmentConfiguration.parse configPath ("[runtime]\npermissions = " + names) |> get
         Assert.That(parsed.Permissions, Is.EqualTo(Some(enum<HostPermissions> expected)))
         let settings = EnvironmentConfiguration.merge directory directory (Some parsed) None false []
         Assert.That(settings.Permissions, Is.EqualTo(parsed.Permissions))
+
+    [<Test>]
+    member _.``All grants every permission bit including future capabilities`` () =
+        let parsed = EnvironmentConfiguration.parse configPath "[runtime]\npermissions = ['All']" |> get
+        Assert.That(parsed.Permissions, Is.EqualTo(Some HostPermissions.All))
+        Assert.That(int HostPermissions.All, Is.EqualTo(~~~0))
 
     [<TestCase("['All','IO']")>]
     [<TestCase("['None','IO']")>]

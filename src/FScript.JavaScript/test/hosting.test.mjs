@@ -269,6 +269,14 @@ test('host permissions default to none and guard declared effects', () => {
   assert.throws(() => run('42', {permissions: ['Unknown']}), /Unknown host permission/);
 });
 
+test('Network gates host-authored callbacks', () => {
+  const fetch = HostFunctions.create({name: 'Host.fetch', parameters: [T.unit], result: T.int,
+    requiredPermissions: ['Network'], invoke: () => 42n});
+  assert.throws(() => run('Host.fetch ()', {externs: [fetch]}), /Unbound/);
+  assert.equal(run('Host.fetch ()', {externs: [fetch], permissions: ['Network']}).value, 42n);
+  assert.throws(() => run('Http.get "http://localhost" ()', {permissions: ['Network']}), /Unbound/);
+});
+
 test('Native grants do not add browser process execution', () => {
   assert.equal(run('42', {permissions: ['Native']}).value, 42n);
   assert.throws(() => run('42', {permissions: ['Process']}), /permission/i);

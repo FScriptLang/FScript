@@ -18,7 +18,7 @@ type ScriptBackendTests() =
     let registration () = Registry.registration {HostContext.create (Directory.GetCurrentDirectory()) with Permissions=HostPermissions.All}
     let options root = "{ FScript.defaults with rootDirectory = Some "+ScriptTestFiles.quote root+" }"
     let call root path args opts = ScriptTestFiles.call (Path.Combine(root,path)) args opts
-    let execute assemblyTarget aliases source =
+    let executeWith (entry: Reflection.MethodInfo) assemblyTarget aliases source =
         let registration = registration ()
         let registration =
             if aliases then
@@ -32,12 +32,12 @@ type ScriptBackendTests() =
             match Compiler.compileWithRegistration registration {Program=Parser.parseProgram source;Externs=[]} with
             | Ok compiled -> compiled.Lir
             | Error errors -> failwith (String.concat "; " (errors |> List.map _.Message))
-        let provider = typeof<CompiledFScript>
+        let provider = entry.DeclaringType |> nonNull
         let program =
             if aliases then
                 program |> ClrBindings.bindMethod "Host.child" (provider.GetMethod("Exec") |> nonNull)
                         |> ClrBindings.bindMethod "Host.options" (provider.GetMethod("Defaults") |> nonNull)
-            else ClrBindings.bindCompiledProviders [provider.GetMethod("Exec") |> nonNull] program
+            else ClrBindings.bindCompiledProviders [entry] program
         let references = [provider.Assembly.Location;typeof<FScript.Extensibility.ScriptValue>.Assembly.Location]
         if assemblyTarget then Harness.executeWith {Harness.options with References=references} program
         else
@@ -45,6 +45,7 @@ type ScriptBackendTests() =
             let target = assembly.GetType("Generated.Program") |> nonNull
             let result = (target.GetMethod("Run") |> nonNull).Invoke(null,[||])
             ((target.GetMethod("FormatResult") |> nonNull).Invoke(null,[|result|]) |> nonNull) :?> string
+    let execute = executeWith (typeof<CompiledFScript>.GetMethod("Exec") |> nonNull)
     let compare assemblyTarget source =
         let expected = ScriptTestFiles.run (registration ()) source |> Pretty.valueToString
         Assert.That(execute assemblyTarget false source, Is.EqualTo(expected))
@@ -101,3 +102,18 @@ type ScriptBackendTests() =
             if fail then Assert.Catch(fun () -> execute assemblyTarget false source |> ignore) |> ignore
             else Assert.That(execute assemblyTarget false source, Is.EqualTo("42"))
             Assert.That(File.ReadAllText(Path.Combine(root,"done.txt")), Is.EqualTo("done")))
+
+    [<TestCase(true)>]
+    [<TestCase(false)>]
+    member _.``Compiled HTTP sends request bodies and returns raw response data`` (assemblyTarget: bool) =
+        use server = new HttpTestServer(HttpTestServer.Reply("HTTP/1.1 418 Teapot\r\nContent-Length: 2\r\nConnection: close\r\n\r\nOK"))
+        let source = $"""
+let request = {{ Http.defaults with body = Some (HttpBody.Bytes [65; 66]) }}
+match Http.post "{server.Url}" request |> Task.await with
+| HttpResult.Received result -> (result.statusCode, result.body)
+| HttpResult.Failed error -> raise (error.message)
+"""
+        Assert.That(executeWith (typeof<CompiledHttp>.GetMethod("Send") |> nonNull) assemblyTarget false source, Is.EqualTo("(418, [79;75])"))
+        let request, _, body = server.Request.GetAwaiter().GetResult()
+        Assert.That(request, Does.StartWith("POST "))
+        Assert.That(body, Is.EqualTo("AB"))

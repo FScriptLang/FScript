@@ -38,6 +38,7 @@
     <Compile Include="Processes/CompiledProcess.fs" />
     <Compile Include="Processes/ProcessSignatures.fs" />
     <Compile Include="ProcessExterns.fs" />
+    <Compile Include="HttpExterns.fs" />
     <Compile Include="StandardLibrary.fs" />
     <Compile Include="Scripts/FScriptSignatures.fs" />
     <Compile Include="Scripts/ScriptRunner.fs" />

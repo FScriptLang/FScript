@@ -54,6 +54,7 @@ module PermissionPolicy =
             | "threading" -> HostPermissions.Threading
             | "io" -> HostPermissions.IO
             | "native" -> HostPermissions.Native
+            | "network" -> HostPermissions.Network
             | name -> invalidArg "permissions" $"Unknown permission '{name}'. Expected Interactive, Threading, IO, Native, All, or None."
         try
             if normalized.Length > 1 && (normalized |> List.exists (fun name -> name = "all" || name = "none")) then

@@ -13,7 +13,9 @@ type HostPermissions =
     | Threading = 2
     | IO = 4
     | Native = 8
-    | All = 15
+    | Network = 16
+    // A signed 32-bit mask with every bit set, including future capabilities.
+    | All = -1
 
 type MapKey =
     | MKString of string

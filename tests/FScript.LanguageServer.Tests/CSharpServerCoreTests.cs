@@ -574,6 +574,7 @@ public sealed class CSharpServerCoreTests
     [TestCase("fscript-stdlib:///SemVer.fss", "module SemVer", "let tryParse", "let compare")]
     [TestCase("fscript-stdlib:///Encoding.fss", "module Encoding", "let utf8Encode", "let uriDecode")]
     [TestCase("fscript-stdlib:///Float.fss", "module Float", "let sqrt", "let pi")]
+    [TestCase("fscript-stdlib:///Http.fss", "module Http", "let send", "let patch")]
     [TestCase("fscript-stdlib:///Json.fss", "module Json", "let deserialize<'a> : string -> 'a option", "let serialize")]
     [TestCase("fscript-stdlib:///Console.fss", "module Console", "let writeLine", "let readLine")]
     [TestCase("fscript-stdlib:///Task.fss", "module Task", "let continueWith", "let whenAny")]

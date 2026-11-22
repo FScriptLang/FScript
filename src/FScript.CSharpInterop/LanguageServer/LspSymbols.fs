@@ -176,6 +176,16 @@ let deserialize<'a> : string -> 'a option
 let serialize : 'a -> string option
 """
 
+    let private httpNames = [ "get"; "head"; "post"; "put"; "patch"; "delete" ]
+
+    let private httpStdlibDoc =
+        let helpers = httpNames |> List.map (fun name -> $"let {name} : string -> HttpRequest -> HttpResult task")
+        let lines =
+            [ "module Http"; ""
+              "let defaults : HttpRequest"
+              "let send : string -> string -> HttpRequest -> HttpResult task" ] @ helpers
+        stdlibDoc "Http.fss" (String.concat "\n" lines + "\n")
+
     let private xmlStdlibDoc =
         stdlibDoc "Xml.fss" """module Xml
 
@@ -199,6 +209,7 @@ let queryValues : string -> string -> string list option
           hashStdlibDoc
           guidStdlibDoc
           jsonStdlibDoc
+          httpStdlibDoc
           xmlStdlibDoc ]
         |> Map.ofList
         |> fun sources ->
@@ -300,6 +311,8 @@ let queryValues : string -> string -> string list option
           ("Json.deserialize", stdlibVirtualUri "Json.fss", "deserialize")
           ("Json.serialize", stdlibVirtualUri "Json.fss", "serialize")
           ("Xml.queryValues", stdlibVirtualUri "Xml.fss", "queryValues") ]
+        |> List.append (("defaults" :: "send" :: httpNames) |> List.map (fun name ->
+            "Http." + name, stdlibVirtualUri "Http.fss", name))
         |> List.append ((SupportLibrary.signatures @ SupportLibrary.runtimeSignatures @ (TaskFunctions.signatures |> List.filter (fun (name,_,_) -> name<>"Task.spawn" && name<>"Task.await"))) |> List.map (fun (name,_,_) ->
             let parts=name.Split('.')
             name,stdlibVirtualUri (parts[0]+".fss"),parts[1]))
@@ -477,11 +490,13 @@ let queryValues : string -> string -> string list option
               "Bool.toString", [ "value" ]
               "Json.deserialize", [ "json" ]
               "Json.serialize", [ "value" ]
+              "Http.send", [ "method"; "url"; "request" ]
               "Console.writeLine", [ "message" ]
               "Console.readLine", [ "unit" ]
               "Xml.queryValues", [ "query"; "xml" ]
               "nameof", [ "name" ]
               "typeof", [ "name" ] ]
+            |> List.append (httpNames |> List.map (fun name -> "Http." + name, [ "url"; "request" ]))
             |> Map.ofList
 
         let signatures =

@@ -15,6 +15,7 @@ Normative behavior for the language, runtime surface, hosting model, and editor/
 
 ## Standard library and extern model
 
+- HTTP requests: [`http.md`](./http.md)
 - Stdlib functions: [`stdlib-functions.md`](./stdlib-functions.md)
 - Host-managed types: [`host-managed-types.md`](./host-managed-types.md)
 - Typed F# host function adapters: [`host-functions.md`](./host-functions.md)
