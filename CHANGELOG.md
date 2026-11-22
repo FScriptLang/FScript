@@ -4,9 +4,13 @@ All notable changes to FScript are documented in this file.
 
 ## [Unreleased]
 
+## [0.95]
+
+### [v0.95.5]
+
 - Publish downloadable language-server distributions so editor tooling can update independently.
 
-## [0.95]
+**Full Changelog**: https://github.com/FScriptLang/FScript/compare/v0.95.3...v0.95.5
 
 ### [v0.95.3]
 
