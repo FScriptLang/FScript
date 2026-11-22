@@ -91,6 +91,15 @@ jobs:
           cp entitlements.plist .out/darwin/entitlements.plist
           (cd .out/darwin; zip -r "../fscript-${BUILD_VERSION}-darwin-unsigned.zip" ./*)
 
+      - name: Publish and verify portable language server
+        shell: bash
+        run: |
+          dotnet publish src/FScript.LanguageServer/FScript.LanguageServer.csproj -c Release --self-contained false -p:UseAppHost=false -p:PublishAot=false -p:Version="$BUILD_VERSION" -o .out/language-server
+          sdk_version="$(sed -n 's/.*<FScriptExtensibilityVersion>\(.*\)<\/FScriptExtensibilityVersion>.*/\1/p' Directory.Build.props)"
+          dotnet run --file .github/scripts/verify-server-assembly-versions.cs -- .out/language-server "$BUILD_VERSION" "${sdk_version}.0"
+          FSCRIPT_RELEASE_SERVER_DIR="$PWD/.out/language-server" FSCRIPT_RELEASE_VERSION="$BUILD_VERSION" dotnet test tests/FScript.LanguageServer.Tests/FScript.LanguageServer.Tests.csproj -c Release
+          node .github/scripts/package-language-server.mjs .out/language-server .out "$BUILD_VERSION" "$GITHUB_SHA"
+
       - name: Pack npm package
         shell: bash
         run: |
@@ -104,7 +113,7 @@ jobs:
       - name: Stage release assets
         run: |
           mkdir -p "${RUNNER_TEMP}/release-assets"
-          cp .out/*.zip .out/*.nupkg .out/*.tgz "${RUNNER_TEMP}/release-assets/"
+          cp .out/*.zip .out/*.nupkg .out/*.tgz .out/fscript-lsp-*.json "${RUNNER_TEMP}/release-assets/"
 
       - name: Upload release packages
         uses: actions/upload-artifact@v4
@@ -330,6 +339,7 @@ jobs:
             ${{ runner.temp }}/release-assets/*.zip
             ${{ runner.temp }}/release-assets/*.nupkg
             ${{ runner.temp }}/release-assets/*.tgz
+            ${{ runner.temp }}/release-assets/fscript-lsp-*.json
 
   publish-artifacts:
     needs: create-release

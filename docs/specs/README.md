@@ -31,6 +31,7 @@ Normative behavior for the language, runtime surface, hosting model, and editor/
 
 ## Editor/LSP behavior
 
+- Language-server distribution: [`language-server-distribution.md`](./language-server-distribution.md)
 - LSP inlay hints: [`lsp-inlay-hints.md`](./lsp-inlay-hints.md)
 - LSP uses runtime extern schemes for typing/signatures and resolves navigation to included-file declarations.
 - LSP inlay hints and hover hints are configurable through initialization options (and mirrored VS Code settings).

@@ -185,3 +185,16 @@ test('CI logging flags preserve the retry default and explicit cache settings', 
     }
   }
 });
+
+test('portable language server is tested before packaging and published with its checksum manifest', () => {
+  const steps = tagged.jobs['package-release'].steps;
+  const server = steps.find(step => step.name === 'Publish and verify portable language server');
+  assert.match(server.run, /--self-contained false.*UseAppHost=false/);
+  assert.match(server.run, /verify-server-assembly-versions/);
+  assert.match(server.run, /FSCRIPT_RELEASE_SERVER_DIR=.*dotnet test tests\/FScript.LanguageServer.Tests/);
+  assert.ok(server.run.indexOf('dotnet test') < server.run.indexOf('package-language-server.mjs'));
+  assert.match(server.run, /"\$BUILD_VERSION" "\$GITHUB_SHA"/);
+  assert.ok(steps.some(step => step.run?.includes('cp .out/*.zip') && step.run.includes('.out/fscript-lsp-*.json')));
+  const publish = stepUsing(tagged.jobs['create-release'], 'softprops/action-gh-release');
+  assert.match(publish.with.files, /fscript-lsp-\*\.json/);
+});

@@ -91,9 +91,9 @@ Follow this exact sequence for every release:
    notarization, GitHub Release publication, and NuGet, npm, and Homebrew.
    Verify the requested version on each distribution channel.
 6. For a coordinated release, plan and validate the extension and website
-   in their repos. Publish the language first and have the extension pin the
-   exact released language commit and SDK. Deploy the website last, after the
-   requested version is available through npm's public `latest` tag.
+   in their repos. Publish the language and LSP assets first and have the
+   extension declare the supported released server version range and runtime.
+   Deploy the website last, after the requested version is available through npm's public `latest` tag.
 
 Rules:
 - Tag-triggered CI is the source of truth for release artifacts and publication.

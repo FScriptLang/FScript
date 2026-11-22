@@ -116,7 +116,7 @@ test-release-changelog:
 
 test-release-workflows:
 	npm ci --prefix .github/scripts --ignore-scripts --no-audit --no-fund
-	node --test .github/scripts/test-release-workflows.mjs
+	node --test .github/scripts/test-release-workflows.mjs .github/scripts/test-package-language-server.mjs
 
 # Container-backed whole-repository checks use Terrabuild from PATH.
 .PHONY: tb-build tb-test tb-smoke tb-sdk tb-check test-terrabuild
