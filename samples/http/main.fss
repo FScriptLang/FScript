@@ -1,0 +1,16 @@
+let fail message =
+    Console.writeLine message
+    Env.setExitCode 1
+
+let url = "https://dumbapis.com/daily/fortune?format=text"
+let request = { Http.defaults with timeoutMilliseconds = 5000 }
+
+match Http.get url request |> Task.await with
+| HttpResult.Received response when response.statusCode = 200 ->
+    match Encoding.utf8Decode response.body with
+    | Some fortune -> Console.writeLine fortune
+    | None -> fail "The fortune response is not valid UTF-8."
+| HttpResult.Received response ->
+    fail $"The fortune service returned HTTP {response.statusCode}."
+| HttpResult.Failed error ->
+    fail $"Could not fetch the daily fortune ({error.kind}). {error.message}"

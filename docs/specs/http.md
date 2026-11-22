@@ -61,3 +61,11 @@ let sendJson url (payload: Payload) =
             response.body |> Encoding.utf8Decode |> Option.bind (fun text -> Json.deserialize<Payload> text)
         | _ -> None
 ```
+
+The [daily fortune sample](../../samples/http/main.fss) fetches a plain-text
+fortune, decodes the response as UTF-8, and prints it to the console. Run it
+from the repository root with internet access.
+
+```sh
+dotnet run --project src/FScript -- --no-result samples/http/main.fss
+```
