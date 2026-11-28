@@ -3,9 +3,7 @@ name: Trusted Terrabuild CI
 on:
   workflow_call:
     secrets:
-      TERRABUILD_TOKEN:
-        required: true
-      TERRABUILD_MASTER_KEY:
+      TERRABUILD_CI_TOKEN:
         required: true
     inputs:
       suffix:
@@ -59,16 +57,14 @@ jobs:
         run: make test-release-changelog
       - name: Require trusted cache credentials
         env:
-          TOKEN: ${{ secrets.TERRABUILD_TOKEN }}
-          KEY: ${{ secrets.TERRABUILD_MASTER_KEY }}
-        run: test -n "$TOKEN" && test -n "$KEY"
+          TOKEN: ${{ secrets.TERRABUILD_CI_TOKEN }}
+        run: test -n "$TOKEN"
       - name: Setup Tools
         id: setup-tools
         uses: ./.github/actions/setup-tools
         with:
           terrabuild_workspace: "6ae115ba87040d459b6ccf40"
-          TERRABUILD_TOKEN: ${{ secrets.TERRABUILD_TOKEN }}
-          TERRABUILD_MASTER_KEY: ${{ secrets.TERRABUILD_MASTER_KEY }}
+          TERRABUILD_TOKEN: ${{ secrets.TERRABUILD_CI_TOKEN }}
           GITHUB_TOKEN: ${{ github.token }}
       - name: Read static test matrix
         id: shards
@@ -105,16 +101,14 @@ jobs:
           fetch-depth: 0
       - name: Require trusted cache credentials
         env:
-          TOKEN: ${{ secrets.TERRABUILD_TOKEN }}
-          KEY: ${{ secrets.TERRABUILD_MASTER_KEY }}
-        run: test -n "$TOKEN" && test -n "$KEY"
+          TOKEN: ${{ secrets.TERRABUILD_CI_TOKEN }}
+        run: test -n "$TOKEN"
       - name: Setup Tools
         id: setup-tools
         uses: ./.github/actions/setup-tools
         with:
           terrabuild_workspace: "6ae115ba87040d459b6ccf40"
-          TERRABUILD_TOKEN: ${{ secrets.TERRABUILD_TOKEN }}
-          TERRABUILD_MASTER_KEY: ${{ secrets.TERRABUILD_MASTER_KEY }}
+          TERRABUILD_TOKEN: ${{ secrets.TERRABUILD_CI_TOKEN }}
           GITHUB_TOKEN: ${{ github.token }}
       - name: Run selected tests and restore their reports
         env:

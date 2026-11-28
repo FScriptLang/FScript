@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
-import {readFileSync, existsSync} from 'node:fs';
+import {readFileSync, existsSync, mkdtempSync, writeFileSync, rmSync} from 'node:fs';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
 import {load} from 'js-yaml';
 import {test} from 'node:test';
 import {spawnSync} from 'node:child_process';
@@ -151,10 +153,11 @@ test('stored credentials and publishing identities are used only by restricted e
   assert.equal(tagged.jobs['sign-and-notarize'].environment, 'release');
   for (const name of ['release-nuget', 'release-npm']) assert.equal(publishing.jobs[name].environment, 'release');
   for (const job of Object.values(workflow('release-homebrew-tap').jobs)) assert.equal(job.environment, 'release');
-  const cacheNames = ['TERRABUILD_MASTER_KEY', 'TERRABUILD_TOKEN'];
+  const cacheNames = ['TERRABUILD_CI_TOKEN'];
   assert.deepEqual(Object.keys(trusted.on.workflow_call.secrets).sort(), cacheNames);
   for (const job of [workflow('ci-main').jobs.ci, tagged.jobs['release-ci']]) {
     assert.deepEqual(Object.keys(job.secrets).sort(), cacheNames);
+    assert.equal(job.secrets.TERRABUILD_CI_TOKEN, '${{ secrets.TERRABUILD_TOKEN }}');
   }
   const distributionNames = ['NPM_KEY', 'PAT_HOMEBREW_TAP'];
   assert.deepEqual(Object.keys(publishing.on.workflow_call.secrets).sort(), distributionNames);
@@ -162,7 +165,9 @@ test('stored credentials and publishing identities are used only by restricted e
   assert.deepEqual(Object.keys(publishing.jobs['update-homebrew-tap'].secrets), ['PAT_HOMEBREW_TAP']);
   assert.deepEqual(Object.keys(workflow('release-homebrew-tap').on.workflow_call.secrets), ['PAT_HOMEBREW_TAP']);
   for (const name of ['build', 'tests']) {
-    assert.ok(trusted.jobs[name].steps.some(step => step.name === 'Require trusted cache credentials'));
+    const credentials = trusted.jobs[name].steps.find(step => step.name === 'Require trusted cache credentials');
+    assert.deepEqual(credentials.env, {TOKEN: '${{ secrets.TERRABUILD_CI_TOKEN }}'});
+    assert.equal(stepUsing(trusted.jobs[name], './.github/actions/setup-tools').with.TERRABUILD_TOKEN, '${{ secrets.TERRABUILD_CI_TOKEN }}');
   }
   const build = trusted.jobs.build.steps.find(step => step.name === 'Build and populate the Terrabuild cache');
   assert.equal(build.env.FSCRIPT_PUBLISH_TOOLCHAIN, 'true');
@@ -197,4 +202,53 @@ test('portable language server is tested before packaging and published with its
   assert.ok(steps.some(step => step.run?.includes('cp .out/*.zip') && step.run.includes('.out/fscript-lsp-*.json')));
   const publish = stepUsing(tagged.jobs['create-release'], 'softprops/action-gh-release');
   assert.match(publish.with.files, /fscript-lsp-\*\.json/);
+});
+
+
+test('trusted cache login uses only the CI token through stdin and fails on rejected credentials', () => {
+  const setup = load(readFileSync(new URL('../actions/setup-tools/action.yml', import.meta.url), 'utf8'));
+  assert.equal(setup.inputs.TERRABUILD_MASTER_KEY, undefined);
+  assert.match(readFileSync(new URL('../../WORKSPACE', import.meta.url), 'utf8'), /terrabuild: "v0\.209\.1"/);
+  for (const name of ['ci-main', 'ci-trusted', 'on-push-tag']) {
+    assert.doesNotMatch(JSON.stringify(workflow(name)), /TERRABUILD_MASTER_KEY/);
+  }
+  const step = setup.runs.steps.find(step => step.id === 'cache');
+  assert.deepEqual(Object.keys(step.env).sort(), ['TERRABUILD_TOKEN', 'TERRABUILD_WORKSPACE']);
+  const fixture = mkdtempSync(join(tmpdir(), 'fscript-ci-login-'));
+  try {
+    writeFileSync(join(fixture, 'terrabuild'), `#!/usr/bin/env bash
+printf '%s\\n' "$@" > "$TB_TEST_ARGS"
+if [[ "$1" == login ]]; then
+  cat > "$TB_TEST_STDIN"
+  exit "\${TB_TEST_LOGIN_EXIT:-0}"
+fi
+`, {mode: 0o700});
+    for (const [name, token, exit] of [['connected', 'test-ci-token', 0], ['anonymous', '', 0], ['rejected', 'test-ci-token', 1]]) {
+      const output = join(fixture, `${name}-output`);
+      const environment = join(fixture, `${name}-env`);
+      const args = join(fixture, `${name}-args`);
+      const stdin = join(fixture, `${name}-stdin`);
+      for (const file of [output, environment]) writeFileSync(file, '');
+      const result = spawnSync('bash', ['-e', '-o', 'pipefail', '-c', step.run], {
+        env: {...process.env, PATH: `${fixture}:${process.env.PATH}`, TERRABUILD_TOKEN: token,
+          TERRABUILD_WORKSPACE: 'test-workspace', GITHUB_OUTPUT: output, GITHUB_ENV: environment,
+          TB_TEST_ARGS: args, TB_TEST_STDIN: stdin, TB_TEST_LOGIN_EXIT: String(exit)},
+        encoding: 'utf8',
+      });
+      assert.equal(result.status, exit, result.stderr);
+      assert.ok(!result.stdout.includes('test-ci-token'));
+      if (token) {
+        assert.equal(readFileSync(args, 'utf8'), 'login\n--workspace\ntest-workspace\n');
+        assert.equal(readFileSync(stdin, 'utf8'), token + '\n');
+        assert.equal(readFileSync(environment, 'utf8'), '');
+        assert.equal(readFileSync(output, 'utf8'), exit ? '' : 'connected=true\n');
+      } else {
+        assert.equal(readFileSync(output, 'utf8'), 'connected=false\n');
+        assert.equal(readFileSync(environment, 'utf8'), 'TB_FLAGS=--local-only\n');
+        assert.ok(!existsSync(stdin));
+      }
+    }
+  } finally {
+    rmSync(fixture, {recursive: true, force: true});
+  }
 });

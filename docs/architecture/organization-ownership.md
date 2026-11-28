@@ -57,7 +57,10 @@ and PRs can build that same image locally without attempting a registry push;
 the publication flag does not change its hash.
 
 Main, release branches, and release tags use `ci-trusted.yml`. Its jobs obtain
-the Terrabuild token and cache key from the `trusted-ci` environment. Apple
+the organization-provided `TERRABUILD_TOKEN` as the reusable-workflow secret
+`TERRABUILD_CI_TOKEN` and run within the `trusted-ci` environment. This internal
+name prevents a same-named environment token from overriding the organization
+token. No master key is required. Apple
 signing/notarization, npm, and tap credentials live in the separate `release`
 environment. Each environment permits only `main`, `release/v*` branches, and
 `v*` tags. A PR's `refs/pull/*/merge` ref cannot use either environment, even if

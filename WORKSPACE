@@ -14,7 +14,7 @@ locals {
     versions = {
         dotnet_sdk: "11.0.100"
         node: "22"
-        terrabuild: "latest"
+        terrabuild: "v0.209.1"
     }
 }
 
